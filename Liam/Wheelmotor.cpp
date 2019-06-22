@@ -1,83 +1,137 @@
-/* This is the library for a WheelMotor
+/*
+ Liam - DIY Robot Lawn Mower
 
-Motor speed is defined as percentage of full speed.
-A speed of 100 means full speed and 0 is stop.
-Speed can also be negative if reverse direction is requested.
+ Wheel Motor Library
 
-Current draw of the motor can be read using the getLoad() method
-
-// Changelog:
-//     2014-12-13 - Initial version by Jonas
-
-============================================
-Placed under the GNU license
-
-===============================================
+ ======================
+  Licensed under GPLv3
+ ======================
 */
 
 #include "Wheelmotor.h"
 
 
-/** Specific constructor.
- */
 WHEELMOTOR::WHEELMOTOR(int pwmpin_, int dirpin_, int loadpin_, int smoothness) {
-	// Set up PWM frequency for pin 3 and 11 to 3921 Hz for smooth running
-	// At default pwm, the frequency of the motors will disturb the BWFsensors
-	// This is very evident if using chinese wheelmotors
-//  	TCCR2B = TCCR2B & 0b11111000 | 0x02;	
-  	
-    pwmpin = pwmpin_;
-    dirpin = dirpin_;
-    loadpin = loadpin_;
-    smoothness_delay = smoothness;
+  pwmpin = pwmpin_;
+  dirpin = dirpin_;
+  loadpin = loadpin_;
+  smoothness_delay = smoothness;
 }
 
 
+
+
+int WHEELMOTOR::setSpeedOverTime(int targetSpeed, int actionTime) {
+		unsigned long _now = millis();
+		if (targetSpeed != ot_currentTargetValue) {
+			ot_currentTargetValue = targetSpeed;
+			ot_startingValue = ot_currentValue;
+			ot_setTime = _now;
+		}
+
+    int newValue;
+
+		if (targetSpeed == ot_currentValue) {
+      //Serial.print("Speed is already set: ");
+      //Serial.print(targetSpeed);
+      _atTargetSpeed = true;
+      newValue = targetSpeed;
+    }
+    else {
+      if (actionTime == 0) {
+        //Serial.print("Actiontime zero");
+
+        newValue = targetSpeed;
+      }
+      else {
+        if (ot_setTime + actionTime < _now) {
+          //Serial.println("Overdue");
+          newValue = targetSpeed;
+        }
+        else {
+
+          newValue = map(_now, ot_setTime, ot_setTime + actionTime, ot_startingValue, targetSpeed);
+          //Serial.print("Mapping");
+          //Serial.print(" ot_startingValue: ");
+          //Serial.print(ot_startingValue);
+          //Serial.print(" targetSpeed: ");
+          //Serial.print(targetSpeed);
+        }
+      }
+    }
+    //Serial.print(" newValue: ");
+    //Serial.println(newValue);
+
+
+		analogWrite(pwmpin, 2.55*abs(newValue));
+		digitalWrite(dirpin, (newValue > 0));
+
+		ot_currentValue = newValue;
+    bool r = targetSpeed - newValue;
+    _atTargetSpeed = r == 0;
+    return r;
+}
+
+bool WHEELMOTOR::isAtTargetSpeed() {
+  return _atTargetSpeed;;
+}
+
 void WHEELMOTOR::setSpeed(int setspeed) {
-  	int diff = 1-2*((setspeed-speed) < 0);
-   	int stepnr = abs(setspeed-speed);
+  /*Serial.print("setspeed");
+  Serial.println(setspeed);*/
 
-   	if (setspeed > 100)	setspeed = 100;
-   	if (setspeed < -100) setspeed = -100;
+	//ot_startingValue = setspeed;
+ // ot_currentValue = setspeed;
+	if (setspeed > 100) setspeed = 100;
+	if (setspeed < -100) setspeed = -100;
 
-   	dir = (setspeed > 0);
+  //// Increase or decrease speed?
+  //int diff = (setspeed < speed)? -1 : 1;
 
-   	for (int i=0; i<stepnr; i++){
-   		speed += diff;
-	   	analogWrite(pwmpin, 2.55*abs(speed));
-   		digitalWrite(dirpin, (speed > 0));
-   		delayMicroseconds(smoothness_delay);					// Smooth ramping of motors
-   	}
-  
-  	speed = setspeed;
+
+  while (setSpeedOverTime(setspeed, smoothness_delay * setspeed / 1000) != 0) {
+    delay(1);
+  }
+  //Serial.println("SetSpeed done");
+  //// Ramp up/down motor smoothly by changing speed by one %-unit at a time.
+  //while(speed != setspeed)
+  //{
+		//speed += diff;
+
+  //  setSpeedOverTime(speed, 0);
+  ////  analogWrite(pwmpin, 255*abs(speed)/100);
+		////digitalWrite(dirpin, (speed > 0));
+
+  //  delayMicroseconds(smoothness_delay);
+  //}
 }
 
 
 int WHEELMOTOR::getSpeed() {
-	return speed;
+  return ot_currentValue;
 }
 
 
 int WHEELMOTOR::getLoad() {
-	load = 0;
-	
-	for (int i=0; i<10; i++) { 
-		load += analogRead(loadpin);
-		delay(1);
-	}
+  int load = 0;
 
-	return load/10;
+  for (int i = 0; i < MOTOR_LOAD_READINGS; i++) {
+    load += analogRead(loadpin);
+    delay(1);
+  }
+
+  return load/MOTOR_LOAD_READINGS;
 }
 
 
 bool WHEELMOTOR::isOverloaded() {
-	return (getLoad() > overload_level);
+  return (getLoad() > overload_level);
 }
 
 void WHEELMOTOR::setOverloadLevel(int level) {
-	overload_level = level;
+  overload_level = level;
 }
 
 void WHEELMOTOR::setSmoothness(int level) {
-	smoothness_delay = level;
+  smoothness_delay = level;
 }

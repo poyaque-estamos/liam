@@ -1,11 +1,11 @@
-// It uses a 9150 compass/gyro/accelerometer combo
-// Changelog:
-//     2014-12-12 - Initial version by Jonas
+/*
+ Liam - DIY Robot Lawn Mower
 
-/* ============================================
-  Placed under the GNU license
+ MPU-9150 Motion Sensor Library
 
-  ===============================================
+ ======================
+  Licensed under GPLv3
+ ======================
 */
 
 #ifndef _MS9150_H_
@@ -16,7 +16,7 @@
 #include <I2Cdev.h>
 #include <MPU9150.h>
 
-class MS9150 : public MOTIONSENSOR {
+class MS9150 : public MOTIONSENSOR{
   public:
     virtual boolean initialize();
     virtual void updateHeading();
@@ -24,10 +24,6 @@ class MS9150 : public MOTIONSENSOR {
     virtual void setNewTargetHeading();
     virtual int headingVsTarget();
     virtual int getTiltAngle();
-    virtual int getZAngle();
-    virtual int getYAngle();
-    virtual int getXAngle();
-
 
   private:
     MPU9150 sensor;

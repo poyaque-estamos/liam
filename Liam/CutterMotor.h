@@ -1,12 +1,11 @@
-/* This is the library for a Cutter Motor
-//
-// Changelog:
-//     2014-12-13 - Initial version by Jonas
+/*
+ Liam - DIY Robot Lawn Mower
 
-============================================
-Placed under the GNU license
+ Cutter Motor Library
 
-===============================================
+ ======================
+  Licensed under GPLv3
+ ======================
 */
 
 #ifndef _CUTTERMOTOR_H_
@@ -16,34 +15,34 @@ Placed under the GNU license
 #include <Arduino.h>
 
 class CUTTERMOTOR {
-    public:
-        CUTTERMOTOR(int type_, int pwmpin_, int loadpin_);
-        
-        // 
-        void initialize();
-        void setSpeed(int setspeed);
-        int getSpeed();
-        
-        int getLoad(); 
-        
-        void brake();
-        bool isBraking();
+  public:
+    CUTTERMOTOR(int type_, int pwmpin_, int loadpin_);
 
-		bool isBrushless();
-		bool isOverloaded();
-		void setOverloadLevel(int level);
+    void initialize();
+    int setSpeedOverTime(int setspeed, int time);
+    void setSpeed(int setspeed);
+    int getSpeed();
 
-    private:
-    	int pwmpin;
-    	int pwm;
-    	int type;
-    	int brakepin;
-    	bool braking;
-    	int loadpin;
-    	int load;
-    	int speed;
-    	int overload_level;
-    	Servo cutter;
+    int getLoad();
+
+    bool isBrushless();
+    bool isOverloaded();
+    void setOverloadLevel(int level);
+
+  private:
+    int pwmpin;
+    int pwm;
+    int type;
+    int loadpin;
+    int speed;
+    int overload_level;
+    Servo cutter;
+
+
+    int ot_setTime = 0;
+    int ot_currentTargetValue = 0;
+    int ot_startingValue = 0;
+    int ot_currentValue = 0;
 };
 
 #endif /* _CUTTERMOTOR_H_ */
